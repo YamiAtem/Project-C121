@@ -1,57 +1,30 @@
-import time
-
 import cv2
-import numpy
+import numpy as np
 
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
+video = cv2.VideoCapture(0)
+image = cv2.imread("image.jpg")
 
-output_file = cv2.VideoWriter('invis_cloak.avi', fourcc, 20.0, (640, 480))
+while True:
 
-cap = cv2.VideoCapture(0)
-print("💎")
+    ret, frame = video.read()
+    print(frame)
+    frame = cv2.resize(frame, (640, 480))
+    image = cv2.resize(image, (640, 480))
 
-time.sleep(2)
-bg = 0
+    u_black = np.array([104, 153, 70])
+    l_black = np.array([30, 30, 0])
 
-for i in range(60):
-    ret, bg = cap.read()
+    mask = cv2.inRange(frame, l_black, u_black)
+    res = cv2.bitwise_and(frame, frame, mask=mask)
 
-bg = numpy.flip(bg, axis=1)
+    f = frame - res
+    f = np.where(f == 0, image, f)
 
-while cap.isOpened():
-    ret, img = cap.read()
+    cv2.imshow("video", frame)
+    cv2.imshow("mask", f)
 
-    if not ret:
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-    img = numpy.flip(img, axis=1)
-
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    lower_red = numpy.array([100, 40, 40])
-    upper_red = numpy.array([100, 255, 255])
-
-    mask_1 = cv2.inRange(hsv, lower_red, upper_red)
-
-    lower_red = numpy.array([155, 40, 40])
-    upper_red = numpy.array([180, 255, 255])
-
-    mask_2 = cv2.inRange(hsv, lower_red, upper_red)
-
-    mask_1 = mask_1 + mask_2
-    mask_1 = cv2.morphologyEx(mask_1, cv2.MORPH_OPEN, numpy.ones((3, 3), numpy.uint8))
-    mask_1 = cv2.morphologyEx(mask_1, cv2.MORPH_DILATE, numpy.ones((3, 3), numpy.uint8))
-
-    mask_2 = cv2.bitwise_not(mask_1)
-
-    res_1 = cv2.bitwise_and(img, img, mask=mask_2)
-    res_2 = cv2.bitwise_and(bg, bg, mask=mask_1)
-
-    final_output = cv2.addWeighted(res_1, 1, res_2, 1, 0)
-    output_file.write(final_output)
-
-    cv2.imshow("Invisibility Cloak", final_output)
-    cv2.waitKey(1)
-
-cap.release()
+video.release()
 cv2.destroyAllWindows()
